@@ -1,0 +1,9 @@
+Player Interface Protocol
+
+Purpose:
+
+Do this later.
+
+Commands:
+
+load - load a game from

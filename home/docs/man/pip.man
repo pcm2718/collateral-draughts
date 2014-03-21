@@ -1,0 +1,14 @@
+.TH PIP 7 "25 February 2014"
+.SH NAME
+Player Interface Protocol /- A protocol for interacting with the Meyrl checkers (draughts) engine.
+.SH DESCRIPTION
+The Player Interface Protocol is a simple protocol for user (player) interaction with the Meyrl checkers (draughts) engine.
+.SH FILES
+.TP
+/fC/dev/cf0/fR
+The remote coffee machine device
+.SH "SEE ALSO"
+
+.SH BUGS
+Contrary to popular belief, the PIP has no bugs. Any so called "errors" are in
+fact a failure of the user/OS/architecture/universe to accommodate the greatness that is PIP. ALL GLORY TO PIP!
