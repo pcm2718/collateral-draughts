@@ -1,10 +1,14 @@
 #include <stdlib.h>
-#include "cmds.h"
+#include <stdio.h>
+#include <stdbool.h>
+#include "state.h"
+#include "cmd.h"
 
 
 
+#define INIT_FILENAME "../../home/examples/checkers_init.dat"
 #define PLAYER_COUNT 2
-#define CMD_BUFFER_SIZE 128
+//#define CMD_BUFFER_SIZE 128
 
 
 
@@ -18,18 +22,16 @@ main ( int argc , char** argv )
   /*
    * Set up list of player id's.
    */
-  char** players = { 'r' , 'b' };
+  char* players [2] = { "r" , "b" };
 
   /*
    * Initialize the game state to a blank state for modification
    * by a player.
    */
-  State state = build_state ();
-
-  /*
-   * Initialize the current game status code to MATCH_OVER.
-   */
-  //unsigned short game_status = MATCH_OVER;
+  State* state = build_state ( );
+  FILE* init_file = fopen ( INIT_FILENAME , "r" );
+  state = state_load ( state , init_file );
+  fclose ( init_file );
 
 
   /*
@@ -49,11 +51,13 @@ main ( int argc , char** argv )
        * round, from the starting position to reseting the game.
        */
 
+
       /*
        * Initialize the player indexer and player.
        */
-      short unsigned indexer = 0;
-      char** player = players[0];
+      unsigned short indexer = 0;
+      char* player = players[0];
+
 
       /*
        * While a game is still in progress (i.e. while both players
@@ -69,7 +73,7 @@ main ( int argc , char** argv )
        * after this loop, it just depends on what happens during
        * development.
        */
-      while ( board_has_moves ( state , player ) )
+      while ( state_has_moves ( state , player ) )
         {
           /*
            * The logic inside this loop effectively handles a single
@@ -97,7 +101,7 @@ main ( int argc , char** argv )
            * lost and the losing player is responsible for resetting
            * the board.
            */
-          while ( keep_turn || ( ! board_has_moves ( state , player ) ) )
+          while ( keep_turn || ( ! state_has_moves ( state , player ) ) )
             {
               /*
                * This logic effectively handles a single command from
@@ -110,87 +114,117 @@ main ( int argc , char** argv )
               /*
                * Initialize the command buffer.
                */
-              char* cmd = malloc ( sizeof ( char ) * CMD_BUFFER_SIZE );
+              //char* cmd = malloc ( sizeof ( char ) * CMD_BUFFER_SIZE );
+              char* cmd = NULL;
+              int cmdlen = 0;
 
               /*
                * Read the next command from stdin.
                *
                * Might try and modify this to avoid the buffer.
                */
-              char* cmd = fgets ( cmd , CMD_BUFFER_SIZE , stdin )
+              getline ( cmd , cmdlen , stdin );
 
               /*
-               * Interpret the verb of the command, this is always the
-               * first word of the command, in a way similar to HTTP.
+               * Extract the verb of the command, this is always the
+               * first word of the command, in a HTTP-like format.
                */
-              char* verb = strtok ( cmd , ' ' );
+              char* verb = strtok ( cmd , " \n" );
+
 
               /*
-               * This switch statement allows for further code to be
-               * executed based on the verb given in the command. I
-               * might move this into another function, as it may be
-               * used in the interpreter loop's implicit fall through
-               * case for processing end-of-game conditions.
-               *
-               * I call it the verb interpreter, mighty is it!
+               * Use an if-else chain statement to select the proper
+               * code to execute for each verb.
                */
-              switch ( verb ):
-              {
-              case VERB_TERM:
-                /*
-                 * This code executes if the verb is the term command.
-                 * Note that this code block contains a legitimate
-                 * goto statement.
-                 */
-                goto term_exit;
-
-              case VERB_MOVE:
-                /*
-                 * This code executes if the verb is the move command.
-                 * It then parses the remainder of the command to
-                 * determine its validity. If the command is well-
-                 * structured and the move is legal, the move is made
-                 * and the moved flag set to true. Otherwise, a 400
-                 * BAD SYNTAX error will be returned. If the move
-                 * requested is well-formed but illegal, a 403 MOVE
-                 * FORBIDDEN error is returned. Assuming no errors
-                 * occur, a 200 OK message is returned.
-                 */
-                moved = true;
-                break;
-
-                /*
-                 * These cases aren't yet implemented, I'll get around
-                 * to it. Don't worry about these for now.
-                 */
-              case VERB_LOAD:
-              case VERB_SAVE:
-              case VERB_SPOT:
+              if ( ! verb )
+                {
+                  /*
+                   * If the entry was just a newline, ignore it.
+                   */
+                }
                 
-              default:
-                /*
-                 * If we don't recognize the given verb, we do the
-                 * safe thing and return the verb nonexistant error.
-                 */
-                fprintf ( player[1], "PCIP/1.0 404 VERB NONEXISTANT" );
-              }
+              else if ( ! strcmp ( verb , VERB_TERM ) )
+                {
+                  /*
+                   * If the term signal is given, then jump to the
+                   * term_exit branch.
+                   */
+
+                  goto term_exit;
+                }
+
+              else if ( ! strcmp ( verb , VERB_LOAD ) )
+                {
+                  cmd_load ( cmd , state );
+                }
+
+              else if ( ! strcmp ( verb , VERB_SAVE ) )
+                {
+                  cmd_save ( cmd , state );
+                }
+
+              else if ( ! strcmp ( verb , VERB_TGET ) )
+                {
+                  cmd_tget ( cmd , state );
+                }
+
+              else if ( ! strcmp ( verb , VERB_TSET ) )
+                {
+                  cmd_tset ( cmd , state );
+                }
+
+              else if ( ! strcmp ( verb , VERB_MOVE ) )
+                {
+                  /*
+                   * This code executes if the verb is the move command.
+                   * It then parses the remainder of the command to
+                   * determine its validity. If the command is well-
+                   * structured and the move is legal, the move is made
+                   * and the moved flag set to true. Otherwise, a 400
+                   * BAD SYNTAX error will be returned. If the move
+                   * requested is well-formed but illegal, a 403 MOVE
+                   * FORBIDDEN error is returned. Assuming no errors
+                   * occur, a 200 OK message is returned.
+                   */
+
+                  cmd_move ( cmd , state );
+
+                  keep_turn = false;
+                }
+
+              else
+                {
+                  /*
+                   * If we don't recognize the given verb, we do the
+                   * safe thing and return the verb nonexistant error.
+                   */
+                  //puts ( "PCIP/1.0 404 NOTVERB" );
+                  puts ( "NULL" );
+                }
+
 
               /*
                * Deallocate the command buffer.
                */
               free ( cmd );
-              
-              /*
-               * Increment the player indexer with wraparound. Set the
-               * pipes pointing to the current player's input and
-               * output.
-               *
-               * Trust me, I have a reason for putting it here.
-               */
-              indexer = ( indexer + 1 ) % PLAYER_COUNT;
-              player = players[indexer];
            }
-        }
+          
+          /*
+           * Increment the player indexer with wraparound. Set the
+           * pipes pointing to the current player's input and
+           * output.
+           *
+           * Trust me, I have a reason for putting it here.
+           */
+          indexer = ( indexer + 1 ) % PLAYER_COUNT;
+          player = players[indexer];
+
+          /*
+           * Announce the turn change.
+           */
+          printf ( "PCIP/1.0 201 NEW TURN\n%c\n" , *player );
+       }
+
 
       /*
        * This is the interpreter loop's aforementioned implicit fall
