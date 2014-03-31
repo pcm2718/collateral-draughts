@@ -25,8 +25,9 @@ main ( int argc , char** argv )
   char* players [2] = { "r" , "b" };
 
   /*
-   * Initialize the game state to a blank state for modification
-   * by a player.
+   * Attempt to initialize the game state to the default.
+   *
+   * Add error checking?
    */
   State* state = build_state ( );
   FILE* init_file = fopen ( INIT_FILENAME , "r" );

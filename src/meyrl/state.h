@@ -13,7 +13,7 @@
 /*
  * Tile codes.
  */
-#define TILE_B_KING 2
+#define TILE_B_KING -2
 #define TILE_B_MAN -1
 #define TILE_EMPTY 0
 #define TILE_R_MAN 1

@@ -23,28 +23,28 @@
 
 
 
-State*
-cmd_move ( char * const args , State * const state );
+bool
+cmd_move ( char * const cmd , State * const state );
 
 
 
-State*
-cmd_load ( char * const args , State * const state );
+bool
+cmd_load ( char * const cmd , State * const state );
 
 
 
-State*
-cmd_save ( char * const args , State * const state );
+bool
+cmd_save ( char * const cmd , State * const state );
 
 
 
-State*
-cmd_tget ( char * const args , State * const state );
+bool
+cmd_tget ( char * const cmd , State * const state );
 
 
 
-State*
-cmd_tset ( char * const args , State * const state );
+bool
+cmd_tset ( char * const cmd , State * const state );
 
 
 
