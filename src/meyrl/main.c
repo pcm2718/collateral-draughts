@@ -1,3 +1,5 @@
+#define _GNU_SOURCE
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -117,14 +119,14 @@ main ( int argc , char** argv )
                */
               //char* cmd = malloc ( sizeof ( char ) * CMD_BUFFER_SIZE );
               char* cmd = NULL;
-              int cmdlen = 0;
+              size_t cmdlen = 0;
 
               /*
                * Read the next command from stdin.
                *
                * Might try and modify this to avoid the buffer.
                */
-              getline ( cmd , cmdlen , stdin );
+              getline ( &cmd , &cmdlen , stdin );
 
               /*
                * Extract the verb of the command, this is always the
