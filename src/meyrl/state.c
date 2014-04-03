@@ -49,69 +49,207 @@ wrap_coordinates ( State * const state , short* x , short* y )
 
 
 
-bool
-state_move ( State * const state , short x , short y , short direction )
+/*
+ * Utility function, not present in state.h.
+ */
+int
+linearise_coordinates ( State * const state , short x , short y )
 {
-  /*
-   * Might want to do a player check here.
-   */
+  return x + ( state->dim * y );
+};
 
+
+
+/*
+ * Generally speaking, this is the piece of code with the most
+ * complexity to it, it needs to be checked last *and* very throughly.
+ *
+ * I should optimize this function with cacheing.
+ */
+bool
+state_move ( State * const state , short x , short y , short move )
+{
   /*
    * Wrap the original coordinates.
    *
    * Might not want to do this.
    */
   wrap_coordinates ( state , &x , &y );
+ 
 
   /*
-   * Initialize the post-move coordinates.
+   * Test the tile to make sure it has a piece and the current player
+   * is allowed to move the piece. If either of these conditions is
+   * not met, cancel the move and return false.
+   */
+  if ( state->board[ linearise_coordinates ( x , y ) ] == TILE_EMPTY
+       || ( state->player == 'r' && tile < 0 )
+       || ( state->player == 'b' && tile > 0 ) )
+    return false;
+
+
+  /*
+   * Set the capture flag to false and initialize the x and y
+   * coordinates of the captured piece. By the end of move
+   * computation,the capture flag indicates whether an enemy piece
+   * has been captured, with capture_x and capture_y holding the
+   * coordinates of the captured piece.
+   *
+   * The capture flag itself may be redundant.
+   */
+  bool capture = false;
+  short capture_x = -1;
+  short capture_y = -1;
+
+
+  /*
+   * Initialize the piece's post-move coordinates.
    */
   short new_x = x;
   short new_y = y;
 
+
   /*
-   * Compute the new x-y coordinates post move.
+   * Move computation loop, the magic happens here.
    *
-   * Might be able to modify enum values to share move code.
+   * I might try and reorder the tests for improved efficiency.
    */
-  switch ( direction )
+  do
     {
-    case MOVE_NE:
-      new_x += 2;
-      new_y += 2 * state->dim;
-      break;
+      /*
+       * If the capture run has started, set the coordinates of the
+       * possibly captured piece.
+       */
+      capture_x = new_x;
+      capture_y = new_y;
 
-    case MOVE_SE:
-      new_x += 2;
-      new_y -= 2 * state->dim;
-      break;
 
-    case MOVE_SW:
-      new_x += 2;
-      new_y -= 2 * state->dim;
-      break;
+      /*
+       * Make sure the piece can be moved as indicated, essentially,
+       * make sure pieces are not moving backwards if they are not
+       * kings. If this is happening, cancel the move and return
+       * false. If the capture flag is set, we already ran this check,
+       * so don't do it again.
+       */
+      if ( ( ! capture )
+           /* Non-king test. */
+           && ( pow ( state->board[ linearise_coordinates ( x , y ) ] , 2 ) < 2 )
+           /* Direction test. */
+           && ( state->board[ linearise_coordinates ( x , y ) ] * move < 0 ) )
+        return false;
 
-    case MOVE_NW:
-      new_x -= 2;
-      new_y -= 2 * state->dim;
-      break;
-    };
+
+      /*
+       * Compute the piece's coordinates after the move. If the
+       * capture flag is set, this piece of code will be run twice
+       * to account for the jump over a piece.
+       *
+       * I might be able to change this to eliminate the comparison
+       * on the capture run.
+       */
+      switch ( move )
+        {
+         case MOVE_SW:
+          new_x -= 1;
+          new_y -= 1;
+          break;
+
+        case MOVE_SE:
+          new_x += 1;
+          new_y -= 1;
+          break;
+
+        case MOVE_NE:
+          new_x += 1;
+          new_y += 1;
+          break;
+
+        case MOVE_NW:
+          new_x -= 1;
+          new_y += 1;
+          break;
+
+        case MOVE_NO:
+        default:
+          /*
+           * Do nothing.
+           */
+        };
+
+
+      /*
+       * Make sure the post-move coordinates are on the board, that
+       * the piece has not landed on a friendly piece and, if the
+       * piece has already jumped an enemy piece, that the piece has
+       * not landed on an enemy piece. If any of these conditions are
+       * true, cancel the move and return false.
+       *
+       * Could I improve this test?
+       */
+      if ( ( ! valid_coordinates ( new_x , new_y ) )
+           || ( state->board[ linearise_coordinates ( x , y ) ] * state->board[ linearise_coordinates ( new_x , new_y ) ] > 0 )
+           || ( capture && ( state->board[ linearise_coordinates ( x , y ) ] * state->board[ linearise_coordinates ( new_x , new_y ) ] < 0 ) ) )
+        return false;
+
+
+      /*
+       * Might put the king test here.
+       */
+
+
+      /*
+       * If the capture flag is set the loop has run twice, so we are
+       * finished computing the move. Break from the move loop.
+       */
+      if ( capture )
+        break;
+
+
+      /*
+       * At this point, we know that the piece has landed on either
+       * an empty space or an enemy piece. Set the capture flag
+       * accordingly.
+       */
+      capture = ( state->board[ linearise_coordinates ( x , y ) ] * state->board[ linearise_coordinates ( new_x , new_y ) ] );
+    }
+  while ( capture );
+
 
   /*
-   * Validate the new coordinates. If coordinates are not valid,
-   * return a false immediately, otherwise, execute the move.
+   * If we get this far, the user's move is legitimate and the capture
+   * flag and capture coordintates have been set in the event of a
+   * capture.
    */
-  if ( ! valid_coordinates ( state , x , y ) )
-    return false;
 
-  short tmp = state->board[ x + ( state->dim * y ) ];
-  state->board[ x + ( state->dim * y ) ] = state->board[ new_x + ( state->dim * new_y ) ];
-  state->board[ new_x + ( state->dim * new_y ) ] = tmp;
 
   /*
-   * If we made it this far, the move was successful, so return true;
+   * Make the actual move.
+   */
+  short tmp = state->board[ linearise_coordinates ( x , y ) ];
+  state->board[ linearise_coordinates ( x , y ) ] = state->board[ linearise_coordinates ( new_x , new_y ) ];
+  state->board[ linearise_coordinates ( new_x , new_y ) ] = tmp;
+
+
+  /*
+   * If the capture flag has been set, remove the captured piece.
+   */
+  if ( capture )
+    state->board[ linearise_coordinates ( capture_x , capture_y ) ] = TILE_EMPTY;
+
+
+  /*
+   * If we got this far, the move was successful, so return true.
    */
   return true;
+
+
+  /*
+   * Compute the linear coordinate and cache the tile.
+   *
+   * Optimize move with these later.
+   */
+  //short linear = linearise_coordinates ( state , x , y );
+  //short tile = state->board[ linear ];
 };
 
 

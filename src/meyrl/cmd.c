@@ -5,7 +5,43 @@
 bool
 cmd_move ( char * const cmd , State * const state )
 {
-  return false;
+  /*
+   * Initialize the x and y coordinates and the move code.
+   */
+  short x = 0;
+  short y = 0;
+  short move = MOVE_NO;
+
+  /*
+   * Get the x and y coordinates  and the move from the command.
+   */
+  char* x_str = strtok ( NULL , " \n" );
+  char* y_str = strtok ( NULL , " \n" );
+  char* move_str = strtok ( NULL , " \n" );
+
+  /*
+   * If any of the argument strings are NULL, we don't have enough
+   * information to make a move. Return failure.
+   */
+  if ( ! ( x_str && y_str && move_str ) )
+    return false;
+
+  /*
+   * Convert the args to shorts.
+   */
+  sscanf ( x_str , "%hi" , &x );
+  sscanf ( y_str , "%hi" , &y );
+  sscanf ( move_str , "%hi" , &move );
+
+  /*
+   * Return the status of the move.
+   */
+  return state_move ( state , x , y , move );
+
+  /*
+   * If we made it this far, the move has been made, so return true.
+   */
+  //return true;
 };
 
 

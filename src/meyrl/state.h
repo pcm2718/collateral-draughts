@@ -33,14 +33,26 @@
 #define CHAR_R_KING 'R'
 
 /*
- * Moves.
+ * Move codes.
  *
  * Can I make these more independent of the state?
  */
-#define MOVE_NE 0
-#define MOVE_SE 1
-#define MOVE_SW 2
-#define MOVE_NW 3
+#define MOVE_SW -2
+#define MOVE_SE -1
+#define MOVE_NO 0
+#define MOVE_NE 1
+#define MOVE_NW 2
+
+/*
+ * Move strs.
+ *
+ * Can I make these more independent of the state?
+ */
+#define STR_SW "SW\0"
+#define STR_SE "SE\0"
+#define STR_NO "NO\0"
+#define STR_NE "NE\0"
+#define STR_NW "NW\0"
 
 
 
@@ -105,12 +117,17 @@ state_tset ( State * const state , short x , short y , short setval );
 
 
 bool
-state_move ( State * const state , short x , short y , short direction );
+state_move ( State * const state , short x , short y , short move );
 
 
 
 bool
 state_has_moves ( State const * const state , char const * const player );
+
+
+
+bool
+state_set_player ( State * const state , char const * const player );
 
 
 

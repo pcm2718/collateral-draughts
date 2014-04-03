@@ -221,6 +221,7 @@ main ( int argc , char** argv )
            */
           indexer = ( indexer + 1 ) % PLAYER_COUNT;
           player = players[indexer];
+          state->player = *player;
 
           /*
            * Announce the turn change.
