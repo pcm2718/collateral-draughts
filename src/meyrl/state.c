@@ -91,7 +91,7 @@ state_move ( State * const state , short x , short y , short move )
    * is allowed to move the piece. If either of these conditions is
    * not met, cancel the move and return false.
    */
-  if ( state->board[ linearise_coordinates ( x , y ) ] == TILE_EMPTY
+  if ( tile == TILE_EMPTY
        || ( state->player == 'r' && tile < 0 )
        || ( state->player == 'b' && tile > 0 ) )
     return false;
@@ -119,6 +119,19 @@ state_move ( State * const state , short x , short y , short move )
 
 
   /*
+    * Make sure the piece can be moved as indicated, essentially,
+    * make sure pieces are not moving backwards if they are not
+    * kings. If this is happening, cancel the move and return
+    * false.
+    */
+  if ( /* Non-king test. */
+       ( tile * tile < 4 )
+       /* Direction test. */
+       && ( tile * move < 0 ) )
+    return false;
+
+
+  /*
    * Move computation loop, the magic happens here.
    *
    * I might try and reorder the tests for improved efficiency.
@@ -131,21 +144,6 @@ state_move ( State * const state , short x , short y , short move )
        */
       capture_x = new_x;
       capture_y = new_y;
-
-
-      /*
-       * Make sure the piece can be moved as indicated, essentially,
-       * make sure pieces are not moving backwards if they are not
-       * kings. If this is happening, cancel the move and return
-       * false. If the capture flag is set, we already ran this check,
-       * so don't do it again.
-       */
-      if ( ( ! capture )
-           /* Non-king test. */
-           && ( pow ( tile , 2 ) < 2 )
-           /* Direction test. */
-           && ( tile * move < 0 ) )
-        return false;
 
 
       /*
@@ -183,6 +181,7 @@ state_move ( State * const state , short x , short y , short move )
           /*
            * Do nothing.
            */
+          break;
         };
 
 
@@ -195,15 +194,10 @@ state_move ( State * const state , short x , short y , short move )
        *
        * Could I improve this test?
        */
-      if ( ( ! valid_coordinates ( new_x , new_y ) )
-           || ( tile * state->board[ linearise_coordinates ( new_x , new_y ) ] > 0 )
-           || ( capture && ( tile * state->board[ linearise_coordinates ( new_x , new_y ) ] < 0 ) ) )
+      if ( ( ! valid_coordinates ( state , new_x , new_y ) )
+           || ( tile * state->board[ linearise_coordinates ( state , new_x , new_y ) ] > 0 )
+           || ( capture && ( tile * state->board[ linearise_coordinates ( state , new_x , new_y ) ] < 0 ) ) )
         return false;
-
-
-      /*
-       * Might put the king test here.
-       */
 
 
       /*
@@ -219,7 +213,7 @@ state_move ( State * const state , short x , short y , short move )
        * an empty space or an enemy piece. Set the capture flag
        * accordingly.
        */
-      capture = ( tile * state->board[ linearise_coordinates ( new_x , new_y ) ] );
+      capture = ( tile * state->board[ linearise_coordinates ( state , new_x , new_y ) ] );
     }
   while ( capture );
 
@@ -236,15 +230,15 @@ state_move ( State * const state , short x , short y , short move )
    * the actual array needs to change here.
    */
   short tmp = tile;
-  state->board[ linearise_coordinates ( x , y ) ] = state->board[ linearise_coordinates ( new_x , new_y ) ];
-  state->board[ linearise_coordinates ( new_x , new_y ) ] = tmp;
+  state->board[ linear ] = state->board[ linearise_coordinates ( state , new_x , new_y ) ];
+  state->board[ linearise_coordinates ( state , new_x , new_y ) ] = tmp;
 
 
   /*
    * If the capture flag has been set, remove the captured piece.
    */
   if ( capture )
-    state->board[ linearise_coordinates ( capture_x , capture_y ) ] = TILE_EMPTY;
+    state->board[ linearise_coordinates ( state , capture_x , capture_y ) ] = TILE_EMPTY;
 
 
   /*
