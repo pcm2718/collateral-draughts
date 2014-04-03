@@ -64,7 +64,7 @@ linearise_coordinates ( State * const state , short x , short y )
  * Generally speaking, this is the piece of code with the most
  * complexity to it, it needs to be checked last *and* very throughly.
  *
- * I should optimize this function with cacheing.
+ * I should optimize this function with caching.
  */
 bool
 state_move ( State * const state , short x , short y , short move )
@@ -76,6 +76,15 @@ state_move ( State * const state , short x , short y , short move )
    */
   wrap_coordinates ( state , &x , &y );
  
+
+  /*
+   * Cache the linear coordinates and the tile.
+   *
+   * Might do more caching in the future.
+   */
+  short linear = linearise_coordinates ( state , x , y );
+  short tile = state->board[ linear ];
+
 
   /*
    * Test the tile to make sure it has a piece and the current player
@@ -133,9 +142,9 @@ state_move ( State * const state , short x , short y , short move )
        */
       if ( ( ! capture )
            /* Non-king test. */
-           && ( pow ( state->board[ linearise_coordinates ( x , y ) ] , 2 ) < 2 )
+           && ( pow ( tile , 2 ) < 2 )
            /* Direction test. */
-           && ( state->board[ linearise_coordinates ( x , y ) ] * move < 0 ) )
+           && ( tile * move < 0 ) )
         return false;
 
 
@@ -187,8 +196,8 @@ state_move ( State * const state , short x , short y , short move )
        * Could I improve this test?
        */
       if ( ( ! valid_coordinates ( new_x , new_y ) )
-           || ( state->board[ linearise_coordinates ( x , y ) ] * state->board[ linearise_coordinates ( new_x , new_y ) ] > 0 )
-           || ( capture && ( state->board[ linearise_coordinates ( x , y ) ] * state->board[ linearise_coordinates ( new_x , new_y ) ] < 0 ) ) )
+           || ( tile * state->board[ linearise_coordinates ( new_x , new_y ) ] > 0 )
+           || ( capture && ( tile * state->board[ linearise_coordinates ( new_x , new_y ) ] < 0 ) ) )
         return false;
 
 
@@ -210,22 +219,23 @@ state_move ( State * const state , short x , short y , short move )
        * an empty space or an enemy piece. Set the capture flag
        * accordingly.
        */
-      capture = ( state->board[ linearise_coordinates ( x , y ) ] * state->board[ linearise_coordinates ( new_x , new_y ) ] );
+      capture = ( tile * state->board[ linearise_coordinates ( new_x , new_y ) ] );
     }
   while ( capture );
 
 
   /*
    * If we get this far, the user's move is legitimate and the capture
-   * flag and capture coordintates have been set in the event of a
+   * flag and capture coordinates have been set in the event of a
    * capture.
    */
 
 
   /*
-   * Make the actual move.
+   * Make the actual move. DO NOT substitute the cached values here,
+   * the actual array needs to change here.
    */
-  short tmp = state->board[ linearise_coordinates ( x , y ) ];
+  short tmp = tile;
   state->board[ linearise_coordinates ( x , y ) ] = state->board[ linearise_coordinates ( new_x , new_y ) ];
   state->board[ linearise_coordinates ( new_x , new_y ) ] = tmp;
 
@@ -241,15 +251,6 @@ state_move ( State * const state , short x , short y , short move )
    * If we got this far, the move was successful, so return true.
    */
   return true;
-
-
-  /*
-   * Compute the linear coordinate and cache the tile.
-   *
-   * Optimize move with these later.
-   */
-  //short linear = linearise_coordinates ( state , x , y );
-  //short tile = state->board[ linear ];
 };
 
 
