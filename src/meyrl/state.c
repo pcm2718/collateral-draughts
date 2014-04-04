@@ -249,14 +249,17 @@ state_move ( State * const state , short x , short y , short move )
 
 
 
-State*
+bool
 state_load ( State * const state , FILE * loadfile )
 {
   /*
    * Note: this is an extremely limited parser, which will need to be
    * modified to support the full functionality of the system it lies
    * beneath.
+   *
+   * Add error checking?
    */
+
 
   /*
    * Read the size of the board.
@@ -269,9 +272,7 @@ state_load ( State * const state , FILE * loadfile )
   fscanf ( loadfile , "%c\n" , &state->player );
 
   /*
-   * Free the board array.
-   *
-   * Might be able to merge this with the step below.
+   * Free the old board.
    */
   free ( state->board );
 
@@ -317,14 +318,14 @@ state_load ( State * const state , FILE * loadfile )
               break;
             }
 
-          state->board[ i + ( state->dim * j ) ] = tile;
+          state->board[ linearise_coordinates ( state , i , j ) ] = tile;
         }
     }
 
   /*
-   * Return the state.
+   * Return success.
    */
-  return state;
+  return true;
 };
 
 
@@ -333,7 +334,7 @@ state_load ( State * const state , FILE * loadfile )
  * Noticed a problem, should the state argument be made const, or
  * should this function return void?
  */
-State*
+bool
 state_save ( State * const state , FILE * savefile )
 {
   /*
@@ -397,7 +398,7 @@ state_save ( State * const state , FILE * savefile )
   /*
    * Return the state.
    */
-  return state;
+  return true;
 };
 
 
@@ -405,8 +406,8 @@ state_save ( State * const state , FILE * savefile )
 /*
  * Might need to add error handling to this.
  */
-short
-state_tget ( State * const state , short x , short y )
+bool
+state_tget ( State * const state , short x , short y , short* getval )
 {
   /*
    * "Wrap" x and y around the board, if necessary.
@@ -417,9 +418,14 @@ state_tget ( State * const state , short x , short y )
   wrap_coordinates ( state , &x , &y );
 
   /*
-   * Return the value of the indicated tile.
+   * Set getval.
    */
-  return state->board[ x + ( state->dim * y ) ];
+  *getval = state->board[ x + ( state->dim * y ) ];
+
+  /*
+   * Return success.
+   */
+  return true;
 };
 
 
@@ -427,7 +433,7 @@ state_tget ( State * const state , short x , short y )
 /*
  * Might need to add error-handling to this.
  */
-void
+bool
 state_tset ( State * const state , short x , short y , short setval )
 {
   /*
@@ -442,6 +448,11 @@ state_tset ( State * const state , short x , short y , short setval )
    * Set the value of the indicated tile.
    */
   state->board[ x + ( state-> dim * y ) ] = setval;
+
+  /*
+   * Return success.
+   */
+  return true;
 };
 
 

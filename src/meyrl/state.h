@@ -96,22 +96,22 @@ free_state ( State* state );
 
 
 
-State*
+bool
 state_load ( State * const state , FILE* loadfile );
 
 
 
-State*
+bool
 state_save ( State * const state , FILE* savefile );
 
 
 
-short
-state_tget ( State * const state , short x , short y );
+bool
+state_tget ( State * const state , short x , short y , short* getval );
 
 
 
-void
+bool
 state_tset ( State * const state , short x , short y , short setval );
 
 

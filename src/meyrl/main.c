@@ -29,12 +29,14 @@ main ( int argc , char** argv )
   /*
    * Attempt to initialize the game state to the default.
    *
-   * Add error checking?
+   * Add more error checking?
    */
   State* state = build_state ( );
   FILE* init_file = fopen ( INIT_FILENAME , "r" );
-  state = state_load ( state , init_file );
+  bool initialized = init_file && state_load ( state , init_file );
   fclose ( init_file );
+  if ( ! initialized )
+    return 1;
 
 
   /*
